@@ -45,10 +45,21 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     bool renderScene = true;
     std::vector<Car> cars = initHighway(renderScene, viewer);
     
-    // TODO:: Create lidar sensor 
+    // TODO:: Create lidar sensor
+    // -------------------------------------------------------------------- 
+    /* stack object but its not a good idea to make an object in stack as we are going to
+        handle pointcloud data. A larger data handling with stack can cause a crash while
+        running the program. 
+    */
+    // Lidar lidar_obj(cars,0.0); 
 
+    // Heap object creation
+    Lidar *lidar_obj= new Lidar(cars,0.0);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr lidar_cloud = lidar_obj->scan();
+    renderRays(viewer, lidar_obj->position, lidar_cloud);
+    //renderPointCloud(viewer,lidar_cloud,*lidar_cloud);
     // TODO:: Create point processor
-  
+    
 }
 
 
@@ -88,5 +99,7 @@ int main (int argc, char** argv)
     while (!viewer->wasStopped ())
     {
         viewer->spinOnce ();
-    } 
+    }
+
+
 }
