@@ -42,6 +42,7 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     // ----------------------------------------------------
     
     // RENDER OPTIONS
+    // Make it false, if you dn't want to visulize physical cars 
     bool renderScene = true;
     std::vector<Car> cars = initHighway(renderScene, viewer);
     
@@ -56,8 +57,10 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     // Heap object creation
     Lidar *lidar_obj= new Lidar(cars,0.0);
     pcl::PointCloud<pcl::PointXYZ>::Ptr lidar_cloud = lidar_obj->scan();
-    renderRays(viewer, lidar_obj->position, lidar_cloud);
-    //renderPointCloud(viewer,lidar_cloud,*lidar_cloud);
+    // To visualize lidar ray visuals
+    //renderRays(viewer, lidar_obj->position, lidar_cloud);
+    Color lidar_ray_color(1.0,0.0,0.0); // setting color to RED
+    renderPointCloud(viewer,lidar_cloud,"lidar_cloud",lidar_ray_color);
     // TODO:: Create point processor
     
 }
