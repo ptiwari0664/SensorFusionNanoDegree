@@ -3,8 +3,37 @@
 | :---:   | :-: | :----: |  :-: |
 | '2020-05-24' | 'MATLAB 2018a'  |'radar\_target\_generation\_and\_detection.m'  | Puneet Tiwari |
 
+This project uses Matlab to introduce frequency modulated continuous-wave (FMCW) radar and related post-processing techniques. The topics covered include:
+
+1. Fast Fourier transforms (FFT) and 2D FFT
+2. Clutter v. target discrimination
+3. Sizing chirp bandwith to meet system requirements for range resolution
+4. Phased array beam steering to determine angle of arrival (AoA)
+5. Constant false alarm rate (CFAR) noise suppression
+6. Signal-to-noise ratio (SNR) and dynamic thresholding
+
 ---
-## Project Layout
+## Project Summary Writeup
+### Implementation steps for the 2D CFAR process
+The 2D constant false alarm rate (CFAR), when applied to the results of the 2D FFT, uses a dynamic threshold set by the noise level in the vicinity of the cell under test (CUT). The key steps are as follows:
+
+- Loop over all cells in the range and doppler dimensions, starting and ending at indices which leave appropriate margins
+- Slice the training cells (and exclude the guard cells) surrounding the CUT
+- Convert the training cell values from decibels (dB) to power, to linearize
+- Find the mean noise level among the training cells
+- Convert this average value back from power to dB
+- Add the offset (in dB) to set the dynamic threshold
+- Apply the threshold and store the result in a binary array of the same dimensions as the range doppler map (RDM)
+
+There is potential room for performance improvement though parallelization. These sliding window type operations may be expressed as a convolution.
+
+### Selection of training cells, guard cells, and offset
+The values were hand selected and can be improved further as well. A rectangular window with the major dimension along the range cells will be selected. This window selection produces better filtered results from the given RDM. Choosing the right value for offset is the key to isolating the simulated target and avoiding false positives. Finally, no of training values can be precalculated to avoid a performance hit in the nested loop.
+
+### Steps taken to suppress the non-thresholded cells at the edges
+In 2D CFAR implementation, only CUT locations with sufficient margins to contain the entire window are considered. An empty array of zeros can be intantiated which is equivalent to the RDM array size. Set the indexed locations to `1` if and only if the threshold is exceeded by the CUT.
+
+## Project Detailed Writeup
 ![](img/project.png)
 
 1. Configure the FMCW waveform based on the system requirements.
@@ -181,46 +210,36 @@ xlabel('Speed');
 ylabel('Range');
 zlabel('Amplitude');
 ```
-<img src="https://camo.githubusercontent.com/..." data-canonical-src="img/radar_target_generation_and_detection_02.png" width="300" height="300" />
-<img src="https://camo.githubusercontent.com/..." data-canonical-src="img/radar_target_generation_and_detection_03.png" width="300" height="300" />
-<!-- ![](img/radar_target_generation_and_detection_02.png |width=250 height=250)
-![](img/radar_target_generation_and_detection_03.png =250x250) -->
+![](img/radar_target_generation_and_detection_02.png)
+![](img/radar_target_generation_and_detection_03.png)
 
 ## CFAR implementation
 -------------------
-
+> Implement the 2D CFAR process on the output of 2D FFT operation, i.e the Range Doppler Map.
+> Slide Window through the complete Range Doppler Map
+> Select the number of Training Cells in both the dimensions.
 ``` {.codeinput}
-%Slide Window through the complete Range Doppler Map
-% *%TODO* :
-%Select the number of train_cellsaining Cells in both the dimensions.
 train_cells = 10;
 train_band = 8;
-
-% *%TODO* :
-%Select the number of Guard Cells in both dimensions around the Cell under
-%test (CUT) for accurate estimation
+```
+> Select the number of Guard Cells in both dimensions around the Cell under test (CUT) for accurate estimation
+``` {.codeinput}
 guard_cells = 4;
 guard_band = 4;
-
-% *%TODO* :
-% offset the threshold by SNR value in dB
+```
+> offset the threshold by SNR value in dB
+``` {.codeinput}
 offset = 1.4;
+```
+> 1. Design a loop such that it slides the CUT across range doppler map by giving margins at the edges for train_cellsaining and Guard Cells.
+> 2. For every iteration sum the signal level within all the training cells. To sum convert the value from logarithmic to linear using db2pow function.
+> 3. Average the summed values for all of the training cells used. After averaging convert it back to logarithimic using pow2db.
+> 4. Further add the offset to it to determine the threshold. 
+> 5. Next, compare the signal under CUT with this threshold. 
+> 6. If the CUT level > threshold assign, it a value of 1, else equate it to 0.
+> 7. Use RDM[x,y] as the matrix from the output of 2D FFT for implementing CFAR
 
-% *%TODO* :
-%design a loop such that it slides the CUT across range doppler map by
-%giving margins at the edges for train_cellsaining and Guard Cells.
-%For every iteration sum the signal level within all the training
-%cells. To sum convert the value from logarithmic to linear using db2pow
-%function. Average the summed values for all of the training
-%cells used. After averaging convert it back to logarithimic using pow2db.
-%Further add the offset to it to determine the threshold. Next, compare the
-%signal under CUT with this threshold. If the CUT level > threshold assign
-%it a value of 1, else equate it to 0.
-
-
-% Use RDM[x,y] as the matrix from the output of 2D FFT for implementing
-% CFAR
-
+``` {.codeinput}
 range_doppler_map = range_doppler_map / max(range_doppler_map(:));
 
 for row1 = train_cells + guard_cells + 1 : (Nr/2) - (train_cells + guard_cells)
@@ -250,17 +269,13 @@ for row1 = train_cells + guard_cells + 1 : (Nr/2) - (train_cells + guard_cells)
 
   end
 end
-
-% *%TODO* :
-% The process above will generate a thresholded block, which is smaller
-%than the Range Doppler Map as the CUT cannot be located at the edges of
-%matrix. Hence,few cells will not be thresholded. To keep the map size same
-% set those values to 0.
+```
+> The process above will generate a thresholded block, which is smaller than the Range Doppler Map as the CUT cannot be located at the edges of matrix. Hence,few cells will not be thresholded. To keep the map size same set those values to 0.
+``` {.codeinput}
 range_doppler_map(range_doppler_map~=0 & range_doppler_map~=1) = 0;
-
-% *%TODO* :
-%display the CFAR output using the Surf function like we did for Range
-%Doppler Response output.
+```
+> Display the CFAR output using the Surf function like we did for Range Doppler Response output.
+``` {.codeinput}
 figure('Name', 'CA-CFAR Filtered RDM')
 surf(doppler_axis, range_axis, range_doppler_map);
 colorbar;
