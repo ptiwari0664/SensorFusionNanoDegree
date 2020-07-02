@@ -1,3 +1,10 @@
+# SensorFusionNanoDegree [NEW LINK]
+
+This repository has been moved to [GitLAB-SensorFusion](https://gitlab.com/ptiwari0664/SensorFusionNanoDegree). 
+Find latest update there.
+
+---
+
 # SensorFusionNanoDegree
 Learn to detect obstacles in lidar point clouds through clustering and segmentation, apply thresholds and filters to radar data in order to accurately track objects, and augment your perception by projecting camera images into three dimensions and fusing these projections with other sensor data. Combine this sensor data with Kalman filters to perceive the world around a vehicle and track objects over time.
 
